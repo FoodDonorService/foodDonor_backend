@@ -86,6 +86,41 @@ class DonationRepository {
       throw error;
     }
   }
+
+  /**
+   * 사용 가능한 기부 목록 조회 (레스토랑 정보 포함)
+   * @returns {Promise<Array>} 사용 가능한 기부 목록
+   */
+  async getAvailableDonations() {
+    try {
+      const connection = await this.db.connect();
+      
+      const query = `
+        SELECT 
+          d.id,
+          d.item_name,
+          d.category,
+          d.quantity,
+          d.expiration_date,
+          d.status,
+          r.name as restaurant_name,
+          r.address as restaurant_address
+        FROM donations d
+        LEFT JOIN restaurants r ON d.restaurant_id = r.id
+        WHERE d.status = 'AVAILABLE'
+        AND d.expiration_date >= CURDATE()
+        ORDER BY d.created_at DESC
+      `;
+      
+      const [rows] = await connection.execute(query);
+      await this.db.disconnect();
+
+      return rows;
+    } catch (error) {
+      console.error('사용 가능한 기부 목록 조회 쿼리 오류:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new DonationRepository();
