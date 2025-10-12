@@ -111,7 +111,68 @@ class MatchRepository {
   }
 
   /**
-   * 푸드뱅크 사용자 조회
+   * 기부 ID로 레스토랑 정보 조회
+   * @param {number} donationId - 기부 ID
+   * @returns {Promise<object|null>} 레스토랑 정보 또는 null
+   */
+  async findRestaurantByDonationId(donationId) {
+    try {
+      const pool = await database.createPool();
+      
+      const query = `
+        SELECT r.latitude, r.longitude 
+        FROM Restaurants r
+        JOIN Donations d ON r.id = d.restaurant_id
+        WHERE d.id = ?
+      `;
+      
+      const [rows] = await pool.execute(query, [donationId]);
+      await pool.end();
+      
+      return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+      console.error('기부 ID로 레스토랑 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 거리 기반으로 가장 가까운 푸드뱅크 사용자 조회
+   * @param {number} latitude - 레스토랑 위도
+   * @param {number} longitude - 레스토랑 경도
+   * @returns {Promise<number|null>} 푸드뱅크 사용자 ID 또는 null
+   */
+  async findNearestFoodBankUser(latitude, longitude) {
+    try {
+      const pool = await database.createPool();
+      
+      const query = `
+        SELECT id, latitude, longitude,
+               (6371 * acos(
+                 cos(radians(?)) * cos(radians(latitude)) *
+                 cos(radians(longitude) - radians(?)) +
+                 sin(radians(?)) * sin(radians(latitude))
+               )) AS distance
+        FROM Users 
+        WHERE role = 'food_bank' 
+          AND latitude IS NOT NULL 
+          AND longitude IS NOT NULL
+        ORDER BY distance ASC 
+        LIMIT 1
+      `;
+      
+      const [rows] = await pool.execute(query, [latitude, longitude, latitude]);
+      await pool.end();
+      
+      return rows.length > 0 ? rows[0].id : null;
+    } catch (error) {
+      console.error('가장 가까운 푸드뱅크 사용자 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 푸드뱅크 사용자 조회 (기본 방식 - 폴백용)
    * @returns {Promise<number|null>} 푸드뱅크 사용자 ID 또는 null
    */
   async findFoodBankUser() {
