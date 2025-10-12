@@ -4,7 +4,7 @@
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const csv = require('csv-parser');
 const stream = require('stream');
-const Restaurant = require('../models/restaurant.model');
+const S3Restaurant = require('../models/s3Restaurant.model');
 const Recipient = require('../models/recipient.model');
 const Foodbank = require('../models/foodbank.model');
 
@@ -56,7 +56,7 @@ class PublicDataClient {
     console.log('좌표 데이터 확인:');
     console.log('X:', data[0]['좌표정보(X)'], 'Type:', typeof data[0]['좌표정보(X)']);
     console.log('Y:', data[0]['좌표정보(Y)'], 'Type:', typeof data[0]['좌표정보(Y)']);
-    return data.map(item => new Restaurant(item));
+    return data.map(item => new S3Restaurant(item));
   }
 
   /**
@@ -84,14 +84,26 @@ class PublicDataClient {
    */
   async searchRestaurantsByName(searchTerm) {
     const restaurants = await this.getRestaurantsFromS3();
+    
+    // 검색어가 없으면 모든 레스토랑 반환
+    if (!searchTerm || searchTerm.trim() === '') {
+      return restaurants;
+    }
+    
     const term = searchTerm.toLowerCase();
     
-    return restaurants.filter(restaurant => 
-      restaurant.businessName.toLowerCase().includes(term) ||
-      restaurant.businessType.toLowerCase().includes(term) ||
-      restaurant.fullAddress.toLowerCase().includes(term) ||
-      restaurant.roadAddress.toLowerCase().includes(term)
-    );
+    return restaurants.filter(restaurant => {
+      // 안전한 검색을 위해 각 필드가 존재하는지 확인
+      const businessName = restaurant.businessName || '';
+      const businessType = restaurant.businessType || '';
+      const fullAddress = restaurant.fullAddress || '';
+      const roadAddress = restaurant.roadAddress || '';
+      
+      return businessName.toLowerCase().includes(term) ||
+             businessType.toLowerCase().includes(term) ||
+             fullAddress.toLowerCase().includes(term) ||
+             roadAddress.toLowerCase().includes(term);
+    });
   }
 
   /**
@@ -101,13 +113,23 @@ class PublicDataClient {
    */
   async searchRecipientsByName(searchTerm) {
     const recipients = await this.getRecipientsFromS3();
+    
+    // 검색어가 없으면 모든 수혜처 반환
+    if (!searchTerm || searchTerm.trim() === '') {
+      return recipients;
+    }
+    
     const term = searchTerm.toLowerCase();
     
-    return recipients.filter(recipient => 
-      recipient.facilityName.toLowerCase().includes(term) ||
-      recipient.facilityType.toLowerCase().includes(term) ||
-      recipient.roadAddress.toLowerCase().includes(term)
-    );
+    return recipients.filter(recipient => {
+      const facilityName = recipient.facilityName || '';
+      const facilityType = recipient.facilityType || '';
+      const roadAddress = recipient.roadAddress || '';
+      
+      return facilityName.toLowerCase().includes(term) ||
+             facilityType.toLowerCase().includes(term) ||
+             roadAddress.toLowerCase().includes(term);
+    });
   }
 
   /**
@@ -117,13 +139,23 @@ class PublicDataClient {
    */
   async searchFoodbanksByName(searchTerm) {
     const foodbanks = await this.getFoodbanksFromS3();
+    
+    // 검색어가 없으면 모든 푸드뱅크 반환
+    if (!searchTerm || searchTerm.trim() === '') {
+      return foodbanks;
+    }
+    
     const term = searchTerm.toLowerCase();
     
-    return foodbanks.filter(foodbank => 
-      foodbank.businessName.toLowerCase().includes(term) ||
-      foodbank.businessType.toLowerCase().includes(term) ||
-      foodbank.roadAddress.toLowerCase().includes(term)
-    );
+    return foodbanks.filter(foodbank => {
+      const businessName = foodbank.businessName || '';
+      const businessType = foodbank.businessType || '';
+      const roadAddress = foodbank.roadAddress || '';
+      
+      return businessName.toLowerCase().includes(term) ||
+             businessType.toLowerCase().includes(term) ||
+             roadAddress.toLowerCase().includes(term);
+    });
   }
 
   /**

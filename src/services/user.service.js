@@ -99,6 +99,8 @@ class UserService {
    */
   async searchByRole(role, searchTerm = '') {
     try {
+      console.log('🔍 검색 요청:', { role, searchTerm });
+      
       // 역할 검증
       this.validateRole(role);
 
@@ -108,15 +110,21 @@ class UserService {
       switch (role.toUpperCase()) {
         case 'DONOR':
           // DONOR 역할일 때는 레스토랑 데이터 검색
+          console.log('🍽️ 레스토랑 검색 중...');
           searchResults = await this.publicDataClient.searchRestaurantsByName(searchTerm);
+          console.log('🍽️ 레스토랑 검색 결과:', searchResults.length, '개');
           break;
         case 'RECIPIENT':
           // RECIPIENT 역할일 때는 수혜처 데이터 검색
+          console.log('🏥 수혜처 검색 중...');
           searchResults = await this.publicDataClient.searchRecipientsByName(searchTerm);
+          console.log('🏥 수혜처 검색 결과:', searchResults.length, '개');
           break;
         case 'FOOD_BANK':
           // FOOD_BANK 역할일 때는 푸드뱅크 데이터 검색
+          console.log('🏪 푸드뱅크 검색 중...');
           searchResults = await this.publicDataClient.searchFoodbanksByName(searchTerm);
+          console.log('🏪 푸드뱅크 검색 결과:', searchResults.length, '개');
           break;
         default:
           throw new Error('지원하지 않는 역할입니다.');
