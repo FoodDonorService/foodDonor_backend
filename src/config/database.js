@@ -7,22 +7,28 @@ class Database {
   constructor() {
     this.connection = null;
     
-    // Connection 설정 (단일 연결용)
+    // AWS RDS Connection 설정 (단일 연결용) - 기존 .env 사용
     this.connectionConfig = {
       host: process.env.DB_HOST,
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      }
     };
     
-    // Pool 설정 (연결 풀용)
+    // AWS RDS Pool 설정 (연결 풀용) - 기존 .env 사용
     this.poolConfig = {
       host: process.env.DB_HOST,
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false
+      },
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
@@ -38,17 +44,17 @@ class Database {
    */
   async connect() {
     try {
-      console.log('🔗 MySQL 연결 시도 중...');
+      console.log('🔗 AWS RDS MySQL 연결 시도 중...');
       console.log('Host:', this.connectionConfig.host);
       console.log('Port:', this.connectionConfig.port);
       console.log('Database:', this.connectionConfig.database);
       console.log('User:', this.connectionConfig.user);
       
       this.connection = await mysql.createConnection(this.connectionConfig);
-      console.log('✅ MySQL 데이터베이스 연결 성공');
+      console.log('✅ AWS RDS MySQL 데이터베이스 연결 성공');
       return this.connection;
     } catch (error) {
-      console.error('❌ MySQL 데이터베이스 연결 실패:', error.message);
+      console.error('❌ AWS RDS MySQL 데이터베이스 연결 실패:', error.message);
       console.error('연결 설정:', {
         host: this.connectionConfig.host,
         port: this.connectionConfig.port,
@@ -66,10 +72,10 @@ class Database {
   async createPool() {
     try {
       const pool = mysql.createPool(this.poolConfig);
-      console.log('✅ MySQL 연결 풀 생성 성공');
+      console.log('✅ AWS RDS MySQL 연결 풀 생성 성공');
       return pool;
     } catch (error) {
-      console.error('❌ MySQL 연결 풀 생성 실패:', error.message);
+      console.error('❌ AWS RDS MySQL 연결 풀 생성 실패:', error.message);
       throw error;
     }
   }
@@ -80,7 +86,7 @@ class Database {
   async disconnect() {
     if (this.connection) {
       await this.connection.end();
-      console.log('✅ MySQL 데이터베이스 연결 종료');
+      console.log('✅ AWS RDS MySQL 데이터베이스 연결 종료');
     }
   }
 
