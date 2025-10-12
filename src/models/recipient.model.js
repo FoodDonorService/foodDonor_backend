@@ -1,17 +1,16 @@
-// src/models/restaurant.model.js
+// src/models/recipient.model.js
 
 /**
- * Restaurant model representing restaurants managed by DONOR users
+ * Recipient model representing social welfare facilities data from S3 CSV
  */
-class Restaurant {
+class Recipient {
   constructor(data) {
-    this.id = data.id || null;
-    this.managerId = data.manager_id || null;
-    this.name = data.name || '';
-    this.address = data.address || '';
-    this.latitude = data.latitude || null;
-    this.longitude = data.longitude || null;
-    this.createdAt = data.created_at || null;
+    this.facilityName = data['사회복지시설명'] || '';
+    this.facilityType = data['사회복지시설종류명'] || '';
+    this.roadAddress = data['소재지도로명주소'] || '';
+    this.phoneNumber = data['전화번호'] || '';
+    this.latitude = parseFloat(data['위도']) || 0;
+    this.longitude = parseFloat(data['경도']) || 0;
   }
 
   /**
@@ -21,8 +20,6 @@ class Restaurant {
    * @returns {number} Distance in kilometers
    */
   calculateDistance(lat, lng) {
-    if (!this.latitude || !this.longitude) return null;
-    
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.toRadians(lat - this.latitude);
     const dLng = this.toRadians(lng - this.longitude);
@@ -46,33 +43,18 @@ class Restaurant {
 
   /**
    * Convert to JSON object
-   * @returns {object} Restaurant data as JSON
+   * @returns {object} Recipient data as JSON
    */
   toJSON() {
     return {
-      id: this.id,
-      managerId: this.managerId,
-      name: this.name,
-      address: this.address,
-      latitude: this.latitude,
-      longitude: this.longitude,
-      createdAt: this.createdAt
-    };
-  }
-
-  /**
-   * Convert to JSON object for database insertion
-   * @returns {object} Restaurant data for database
-   */
-  toDBObject() {
-    return {
-      manager_id: this.managerId,
-      name: this.name,
-      address: this.address,
+      facilityName: this.facilityName,
+      facilityType: this.facilityType,
+      roadAddress: this.roadAddress,
+      phoneNumber: this.phoneNumber,
       latitude: this.latitude,
       longitude: this.longitude
     };
   }
 }
 
-module.exports = Restaurant;
+module.exports = Recipient;

@@ -1,1 +1,190 @@
 // 
+// src/clients/publicData.client.js
+
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const csv = require('csv-parser');
+const stream = require('stream');
+const Restaurant = require('../models/restaurant.model');
+const Recipient = require('../models/recipient.model');
+const Foodbank = require('../models/foodbank.model');
+
+class PublicDataClient {
+  constructor() {
+    // .env 파일의 AWS_ 키들을 자동으로 인식하여 클라이언트를 설정합니다.
+    this.s3Client = new S3Client({
+      region: process.env.AWS_REGION,
+    });
+    this.bucketName = process.env.S3_BUCKET_NAME;
+  }
+
+  /**
+   * S3에서 CSV 파일을 읽어 JSON 배열로 반환하는 공통 메서드
+   * @param {string} fileName - S3 파일명
+   * @returns {Promise<object[]>} CSV 데이터 배열
+   */
+  async getCsvDataFromS3(fileName) {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: fileName,
+    });
+
+    try {
+      const { Body } = await this.s3Client.send(command);
+
+      return new Promise((resolve, reject) => {
+        const results = [];
+        // Body는 스트림 형태이므로 csv-parser에 파이프로 연결합니다.
+        Body.pipe(csv())
+          .on('data', (data) => results.push(data))
+          .on('end', () => resolve(results))
+          .on('error', (error) => reject(error));
+      });
+    } catch (error) {
+      console.error(`S3에서 ${fileName} 파일을 읽는 중 오류 발생:`, error);
+      throw new Error(`Failed to retrieve ${fileName} from S3.`);
+    }
+  }
+
+  /**
+   * S3에서 레스토랑 CSV 파일을 읽어 Restaurant 객체 배열로 반환합니다.
+   * @returns {Promise<Restaurant[]>} 레스토랑 데이터 배열
+   */
+  async getRestaurantsFromS3() {
+    const data = await this.getCsvDataFromS3('csv/Restaurants.csv');
+    console.log('CSV 컬럼명들:', Object.keys(data[0] || {}));
+    console.log('첫 번째 데이터 샘플:', data[0]);
+    console.log('좌표 데이터 확인:');
+    console.log('X:', data[0]['좌표정보(X)'], 'Type:', typeof data[0]['좌표정보(X)']);
+    console.log('Y:', data[0]['좌표정보(Y)'], 'Type:', typeof data[0]['좌표정보(Y)']);
+    return data.map(item => new Restaurant(item));
+  }
+
+  /**
+   * S3에서 수혜처 CSV 파일을 읽어 Recipient 객체 배열로 반환합니다.
+   * @returns {Promise<Recipient[]>} 수혜처 데이터 배열
+   */
+  async getRecipientsFromS3() {
+    const data = await this.getCsvDataFromS3('csv/Recipient.csv');
+    return data.map(item => new Recipient(item));
+  }
+
+  /**
+   * S3에서 푸드뱅크 CSV 파일을 읽어 Foodbank 객체 배열로 반환합니다.
+   * @returns {Promise<Foodbank[]>} 푸드뱅크 데이터 배열
+   */
+  async getFoodbanksFromS3() {
+    const data = await this.getCsvDataFromS3('csv/Foodbank.csv');
+    return data.map(item => new Foodbank(item));
+  }
+
+  /**
+   * 레스토랑 이름으로 검색
+   * @param {string} searchTerm - 검색어
+   * @returns {Promise<Restaurant[]>} 검색된 레스토랑 배열
+   */
+  async searchRestaurantsByName(searchTerm) {
+    const restaurants = await this.getRestaurantsFromS3();
+    const term = searchTerm.toLowerCase();
+    
+    return restaurants.filter(restaurant => 
+      restaurant.businessName.toLowerCase().includes(term) ||
+      restaurant.businessType.toLowerCase().includes(term) ||
+      restaurant.fullAddress.toLowerCase().includes(term) ||
+      restaurant.roadAddress.toLowerCase().includes(term)
+    );
+  }
+
+  /**
+   * 수혜처 이름으로 검색
+   * @param {string} searchTerm - 검색어
+   * @returns {Promise<Recipient[]>} 검색된 수혜처 배열
+   */
+  async searchRecipientsByName(searchTerm) {
+    const recipients = await this.getRecipientsFromS3();
+    const term = searchTerm.toLowerCase();
+    
+    return recipients.filter(recipient => 
+      recipient.facilityName.toLowerCase().includes(term) ||
+      recipient.facilityType.toLowerCase().includes(term) ||
+      recipient.roadAddress.toLowerCase().includes(term)
+    );
+  }
+
+  /**
+   * 푸드뱅크 이름으로 검색
+   * @param {string} searchTerm - 검색어
+   * @returns {Promise<Foodbank[]>} 검색된 푸드뱅크 배열
+   */
+  async searchFoodbanksByName(searchTerm) {
+    const foodbanks = await this.getFoodbanksFromS3();
+    const term = searchTerm.toLowerCase();
+    
+    return foodbanks.filter(foodbank => 
+      foodbank.businessName.toLowerCase().includes(term) ||
+      foodbank.businessType.toLowerCase().includes(term) ||
+      foodbank.roadAddress.toLowerCase().includes(term)
+    );
+  }
+
+  /**
+   * 좌표 기반으로 가까운 레스토랑들을 거리순으로 정렬하여 반환
+   * @param {number} x - X 좌표
+   * @param {number} y - Y 좌표
+   * @param {number} limit - 반환할 최대 개수 (기본값: 10)
+   * @returns {Promise<Restaurant[]>} 거리순으로 정렬된 레스토랑 배열
+   */
+  async getNearbyRestaurants(x, y, limit = 10) {
+    const restaurants = await this.getRestaurantsFromS3();
+    
+    return restaurants
+      .map(restaurant => ({
+        ...restaurant,
+        distance: restaurant.calculateDistance(x, y)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ distance, ...restaurant }) => restaurant);
+  }
+
+  /**
+   * 좌표 기반으로 가까운 수혜처들을 거리순으로 정렬하여 반환
+   * @param {number} latitude - 위도
+   * @param {number} longitude - 경도
+   * @param {number} limit - 반환할 최대 개수 (기본값: 10)
+   * @returns {Promise<Recipient[]>} 거리순으로 정렬된 수혜처 배열
+   */
+  async getNearbyRecipients(latitude, longitude, limit = 10) {
+    const recipients = await this.getRecipientsFromS3();
+    
+    return recipients
+      .map(recipient => ({
+        ...recipient,
+        distance: recipient.calculateDistance(latitude, longitude)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ distance, ...recipient }) => recipient);
+  }
+
+  /**
+   * 좌표 기반으로 가까운 푸드뱅크들을 거리순으로 정렬하여 반환
+   * @param {number} latitude - 위도
+   * @param {number} longitude - 경도
+   * @param {number} limit - 반환할 최대 개수 (기본값: 10)
+   * @returns {Promise<Foodbank[]>} 거리순으로 정렬된 푸드뱅크 배열
+   */
+  async getNearbyFoodbanks(latitude, longitude, limit = 10) {
+    const foodbanks = await this.getFoodbanksFromS3();
+    
+    return foodbanks
+      .map(foodbank => ({
+        ...foodbank,
+        distance: foodbank.calculateDistance(latitude, longitude)
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ distance, ...foodbank }) => foodbank);
+  }
+}
+
+module.exports = new PublicDataClient();
