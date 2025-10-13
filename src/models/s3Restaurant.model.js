@@ -5,6 +5,7 @@
  */
 class S3Restaurant {
   constructor(data) {
+    this.id = data['ID'] || data['id'] || null;
     // 모든 필드에서 따옴표 제거
     this.businessName = this.cleanString(data['사업장명']);
     this.businessStatus = this.cleanString(data['영업상태명']);
@@ -56,6 +57,7 @@ class S3Restaurant {
    */
   toJSON() {
     return {
+      id: this.id,
       businessName: this.businessName,
       businessStatus: this.businessStatus,
       businessType: this.businessType,
