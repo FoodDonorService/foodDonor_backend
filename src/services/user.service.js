@@ -33,6 +33,7 @@ class UserService {
 
       // 사용자 객체 생성
       const user = new User({
+        id: userData.id || null, // 요청에서 ID 받기
         username: userData.username,
         password_hash: passwordHash,
         name: userData.name,
@@ -135,6 +136,7 @@ class UserService {
         if (role.toUpperCase() === 'DONOR') {
           // 레스토랑 데이터
           return {
+            id: item.id,
             name: item.businessName,
             address: item.roadAddress || item.fullAddress,
             latitude: item.latitude,
@@ -144,6 +146,7 @@ class UserService {
         } else if (role.toUpperCase() === 'RECIPIENT') {
           // 수혜처 데이터
           return {
+            id: item.id,
             name: item.facilityName,
             address: item.roadAddress,
             latitude: item.latitude,
@@ -153,6 +156,7 @@ class UserService {
         } else if (role.toUpperCase() === 'FOOD_BANK') {
           // 푸드뱅크 데이터
           return {
+            id: item.id,
             name: item.businessName,
             address: item.roadAddress,
             latitude: item.latitude,

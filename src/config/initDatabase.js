@@ -72,8 +72,8 @@ class DatabaseInitializer {
   async createUsersTable(connection) {
     const sql = `
       CREATE TABLE IF NOT EXISTS Users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL COMMENT 'Login ID or Email',
+        username VARCHAR(255) PRIMARY KEY COMMENT 'Login ID or Email',
+        id VARCHAR(255) NOT NULL COMMENT 'Business ID (can be duplicated with different roles)',
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL COMMENT 'Name of the person or organization',
         role VARCHAR(50) NOT NULL COMMENT "Enum: 'DONOR', 'RECIPIENT', 'FOOD_BANK'",
@@ -83,7 +83,8 @@ class DatabaseInitializer {
         phone_number VARCHAR(50),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_role (role),
-        INDEX idx_username (username)
+        INDEX idx_id_role (id, role),
+        UNIQUE KEY unique_id_role (id, role)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `;
     
@@ -205,6 +206,7 @@ class DatabaseInitializer {
       // 샘플 사용자 데이터
       const users = [
         {
+          id: 'restaurant_001',
           username: 'donor1@example.com',
           password_hash: '$2b$10$example_hash_1',
           name: '김기부',
@@ -215,6 +217,18 @@ class DatabaseInitializer {
           phone_number: '010-1234-5678'
         },
         {
+          id: 'restaurant_001',
+          username: 'donor1_manager@example.com',
+          password_hash: '$2b$10$example_hash_1b',
+          name: '김매니저',
+          role: 'DONOR',
+          address: '서울특별시 강남구 테헤란로 123',
+          latitude: 37.5665,
+          longitude: 126.9780,
+          phone_number: '010-1234-5679'
+        },
+        {
+          id: 'facility_001',
           username: 'recipient1@example.com',
           password_hash: '$2b$10$example_hash_2',
           name: '강남구립 행복요양원',
@@ -225,6 +239,18 @@ class DatabaseInitializer {
           phone_number: '02-3412-1234'
         },
         {
+          id: 'facility_001',
+          username: 'recipient1_admin@example.com',
+          password_hash: '$2b$10$example_hash_2b',
+          name: '강남구립 행복요양원 관리자',
+          role: 'RECIPIENT',
+          address: '서울특별시 강남구 광평로 195',
+          latitude: 37.489123,
+          longitude: 127.098456,
+          phone_number: '02-3412-1235'
+        },
+        {
+          id: 'foodbank_001',
           username: 'foodbank1@example.com',
           password_hash: '$2b$10$example_hash_3',
           name: '강남구 푸드뱅크마켓센터',
@@ -238,8 +264,8 @@ class DatabaseInitializer {
 
       for (const user of users) {
         await connection.execute(
-          'INSERT IGNORE INTO Users (username, password_hash, name, role, address, latitude, longitude, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [user.username, user.password_hash, user.name, user.role, user.address, user.latitude, user.longitude, user.phone_number]
+          'INSERT IGNORE INTO Users (username, id, password_hash, name, role, address, latitude, longitude, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [user.username, user.id, user.password_hash, user.name, user.role, user.address, user.latitude, user.longitude, user.phone_number]
         );
       }
 

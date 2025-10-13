@@ -5,6 +5,7 @@
  */
 class Recipient {
   constructor(data) {
+    this.id = data['ID'] || data['id'] || null;
     this.facilityName = data['사회복지시설명'] || '';
     this.facilityType = data['사회복지시설종류명'] || '';
     this.roadAddress = data['소재지도로명주소'] || '';
@@ -47,6 +48,7 @@ class Recipient {
    */
   toJSON() {
     return {
+      id: this.id,
       facilityName: this.facilityName,
       facilityType: this.facilityType,
       roadAddress: this.roadAddress,
