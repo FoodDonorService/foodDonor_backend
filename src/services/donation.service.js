@@ -23,7 +23,7 @@ const createDonation = async (donationData) => {
 
     // Donation 모델 인스턴스 생성
     const donation = new Donation({
-      restaurant_id: restaurant.owner_id,
+      restaurant_id: restaurant.id,
       item_name: donationData.item_name,
       category: donationData.category,
       quantity: donationData.quantity,
