@@ -63,16 +63,7 @@ class MatchService {
         };
     }
 
-    async getAcceptedMatches() {
-        const matches = await matchRepository.findAcceptedWithDetails();
-        return {
-            status: "success",
-            message: "매치 상세정보 조회 성공",
-            data: {
-                list: matches
-            }
-        };
-    }
+    // Removed duplicate getAcceptedMatches() that referenced a non-existent repository method
 
     async acceptMatch(matchId, food_bank_id) {
         const matchData = await matchRepository.findById(matchId);
