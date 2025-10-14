@@ -13,18 +13,18 @@ class MatchController {
    */
   async getAcceptedMatches(req, res) {
     try {
-      // Get food bank ID from request (assuming it's in req.user or req.params)
-      const foodBankId = req.user?.id || req.params?.foodBankId;
+      // Get food bank ID from session
+      const foodBankId = req.session?.user?.id;
       
       if (!foodBankId) {
-        return res.status(400).json({
+        return res.status(401).json({
           status: 'error',
-          message: 'Food bank ID is required'
+          message: '로그인이 필요합니다'
         });
       }
 
       // Call service to get matches
-      const result = await matchService.getAcceptedMatches(parseInt(foodBankId));
+      const result = await matchService.getAcceptedMatches(foodBankId);
 
       // Return success response
       res.status(200).json({

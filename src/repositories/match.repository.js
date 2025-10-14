@@ -7,18 +7,15 @@ const db = require('../config/database');
  */
 class MatchRepository {
   /**
-   * Get accepted matches for a specific food bank with detailed information
+   * Get accepted matches for a specific food bank with donation and restaurant info only
    * @param {number} foodBankId - ID of the food bank
-   * @returns {Promise<Array>} Array of accepted matches with detailed information
+   * @returns {Promise<Array>} Array of accepted matches with donation and restaurant info
    */
   async getAcceptedMatches(foodBankId) {
     const query = `
       SELECT 
         m.id as match_id,
-        r.id as recipient_id,
-        r.facility_name as recipient_name,
-        r.road_address as recipient_address,
-        r.phone_number as recipient_phone_number,
+        m.recipient_id,
         rest.id as restaurant_id,
         rest.name as restaurant_name,
         rest.address as restaurant_address,
@@ -28,7 +25,6 @@ class MatchRepository {
         d.quantity as donation_quantity,
         d.expiration_date as donation_expiration_date
       FROM matches m
-      INNER JOIN recipients r ON m.recipient_id = r.id
       INNER JOIN donations d ON m.donation_id = d.id
       INNER JOIN restaurants rest ON d.restaurant_id = rest.id
       WHERE m.food_bank_id = ? AND m.status = 'ACCEPTED'
