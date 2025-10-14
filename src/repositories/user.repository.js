@@ -25,13 +25,13 @@ class UserRepository {
       const values = [
         userData.username,
         userData.id,
-        userData.passwordHash,
+        userData.password_hash,
         userData.name,
         userData.role,
         userData.address,
         userData.latitude,
         userData.longitude,
-        userData.phoneNumber
+        userData.phone_number
       ];
 
       const [result] = await connection.execute(sql, values);

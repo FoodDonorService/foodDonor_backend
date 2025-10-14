@@ -18,10 +18,8 @@ app.use(cookieParser());
 
 // CORS 설정 (명시적 허용 Origin + 자격 증명 지원)
 const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_ORIGIN,
   'http://food-donor-frontend-v1.s3-website.ap-northeast-2.amazonaws.com',
-  'http://localhost:3000'
-].filter(Boolean);
+]
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;

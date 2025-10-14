@@ -18,7 +18,7 @@ class DonationRepository {
       const connection = await this.db.connect();
       
       const query = `
-        INSERT INTO donations (
+        INSERT INTO Donations (
           restaurant_id, item_name, category, quantity, expiration_date, status, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
@@ -52,7 +52,7 @@ class DonationRepository {
     try {
       const connection = await this.db.connect();
       
-      const query = 'SELECT * FROM donations WHERE id = ?';
+      const query = 'SELECT * FROM Donations WHERE id = ?';
       const [rows] = await connection.execute(query, [id]);
       await this.db.disconnect();
 
@@ -73,7 +73,7 @@ class DonationRepository {
       const connection = await this.db.connect();
       
       const query = `
-        SELECT * FROM restaurants 
+        SELECT * FROM Restaurants 
         WHERE manager_id = ?
         LIMIT 1
       `;
@@ -105,8 +105,8 @@ class DonationRepository {
           d.status,
           r.name as restaurant_name,
           r.address as restaurant_address
-        FROM donations d
-        LEFT JOIN restaurants r ON d.restaurant_id = r.id
+        FROM Donations d
+        LEFT JOIN Restaurants r ON d.restaurant_id = r.id
         WHERE d.status = 'AVAILABLE'
         AND d.expiration_date >= CURDATE()
         ORDER BY d.created_at DESC

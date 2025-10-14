@@ -8,24 +8,7 @@ class MatchRepository {
         this.db = database;
     }
 
-    /**
-     * ID로 매칭 조회
-     * @param {number} id - 매칭 ID
-     * @returns {Promise<Match|null>} 매칭 또는 null
-     */
-    async findById(id) {
-        try {
-            const connection = await this.db.connect();
-            const sql = 'SELECT * FROM Matches WHERE id = ?';
-            const [rows] = await connection.execute(sql, [id]);
-            await this.db.disconnect();
-
-            return rows.length > 0 ? new Match(rows[0]) : null;
-        } catch (error) {
-            console.error('ID로 매칭 조회 실패:', error);
-            throw error;
-        }
-    }
+    // (중복 메서드 제거) findById는 아래에 단일 정의로 유지
 
     /**
      * 매칭 정보 업데이트
@@ -74,27 +57,25 @@ class MatchRepository {
     async findPendingWithDetails() {
         try {
             const connection = await this.db.connect();
-            // API 명세서에 맞는 데이터를 위해 여러 테이블을 JOIN합니다.
-            // 테이블과 컬럼명은 실제 DB 스키마에 맞게 조정이 필요할 수 있습니다.
             const sql = `
         SELECT
           m.id AS match_id,
-          r.id AS recipient_id,
-          r.name AS recipient_name,
-          r.address AS recipient_address,
-          u.id AS restaurant_id,
-          u.name AS restaurant_name,
-          u.address AS restaurant_address,
+          m.recipient_id,
+          u_rec.name AS recipient_name,
+          u_rec.address AS recipient_address,
+          r.id AS restaurant_id,
+          r.name AS restaurant_name,
+          r.address AS restaurant_address,
           d.id AS donation_id,
           d.item_name AS donation_item_name,
           d.category AS donation_category,
           d.quantity AS donation_quantity,
           d.expiration_date AS donation_expiration_date,
           m.status
-        FROM Matches AS m
-        JOIN Recipients AS r ON m.recipient_id = r.id
-        JOIN Donations AS d ON m.donation_id = d.id
-        JOIN Users AS u ON d.user_id = u.id
+        FROM Matches m
+        JOIN Donations d ON m.donation_id = d.id
+        JOIN Restaurants r ON d.restaurant_id = r.id
+        JOIN Users u_rec ON m.recipient_id = u_rec.id
         WHERE m.status = 'PENDING'
         ORDER BY m.created_at DESC
       `;
@@ -107,28 +88,30 @@ class MatchRepository {
         }
     }
 
-    async getAcceptedMatches(foodBankId) {
+  async getAcceptedMatches(foodBankId) {
     const query = `
       SELECT 
         m.id as match_id,
         m.recipient_id,
-        rest.id as restaurant_id,
-        rest.name as restaurant_name,
-        rest.address as restaurant_address,
+        r.id as restaurant_id,
+        r.name as restaurant_name,
+        r.address as restaurant_address,
         d.id as donation_id,
         d.item_name as donation_item_name,
         d.category as donation_category,
         d.quantity as donation_quantity,
         d.expiration_date as donation_expiration_date
-      FROM matches m
-      INNER JOIN donations d ON m.donation_id = d.id
-      INNER JOIN restaurants rest ON d.restaurant_id = rest.id
+      FROM Matches m
+      INNER JOIN Donations d ON m.donation_id = d.id
+      INNER JOIN Restaurants r ON d.restaurant_id = r.id
       WHERE m.food_bank_id = ? AND m.status = 'ACCEPTED'
       ORDER BY m.created_at DESC
     `;
 
     try {
-      const [rows] = await db.execute(query, [foodBankId]);
+      const connection = await this.db.connect();
+      const [rows] = await connection.execute(query, [foodBankId]);
+      await this.db.disconnect();
       return rows;
     } catch (error) {
       console.error('Error fetching accepted matches:', error);
