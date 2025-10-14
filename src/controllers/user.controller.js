@@ -178,6 +178,36 @@ class UserController {
       });
     }
   }
+
+  /**
+   * DONOR 사용자의 레스토랑 정보 조회
+   * @param {object} req - Express request object
+   * @param {object} res - Express response object
+   */
+  async getRestaurant(req, res) {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({
+          status: 'error',
+          message: '로그인이 필요합니다.'
+        });
+      }
+
+      const result = await userService.getRestaurantByManagerId(req.session.userId);
+      
+      res.status(200).json({
+        status: 'success',
+        message: result.message,
+        data: result.data
+      });
+    } catch (error) {
+      console.error('레스토랑 정보 조회 컨트롤러 오류:', error);
+      res.status(400).json({
+        status: 'error',
+        message: error.message || '레스토랑 정보 조회 중 오류가 발생했습니다.'
+      });
+    }
+  }
 }
 
 module.exports = new UserController();

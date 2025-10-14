@@ -2,12 +2,15 @@
 
 const bcrypt = require('bcrypt');
 const userRepository = require('../repositories/user.repository');
+const restaurantRepository = require('../repositories/restaurant.repository');
 const publicDataClient = require('../clients/publicData.client');
 const User = require('../models/user.model');
+const Restaurant = require('../models/restaurant.model');
 
 class UserService {
   constructor() {
     this.userRepo = userRepository;
+    this.restaurantRepo = restaurantRepository;
     this.publicDataClient = publicDataClient;
     this.saltRounds = 10;
   }
@@ -33,6 +36,7 @@ class UserService {
 
       // 사용자 객체 생성
       const user = new User({
+        id: userData.id || null, // 요청에서 ID 받기
         username: userData.username,
         password_hash: passwordHash,
         name: userData.name,
@@ -45,6 +49,25 @@ class UserService {
 
       // 데이터베이스에 저장
       const createdUser = await this.userRepo.create(user.toDBObject());
+
+      // DONOR role인 경우 restaurant 생성
+      if (userData.role === 'DONOR') {
+        try {
+          const restaurant = new Restaurant({
+            manager_id: createdUser.id,
+            name: userData.name, // restaurantName이 없으면 사용자 이름 사용
+            address: userData.address,
+            latitude: userData.latitude,
+            longitude: userData.longitude
+          });
+
+          await this.restaurantRepo.create(restaurant.toDBObject());
+          console.log('✅ DONOR 사용자용 레스토랑 생성 완료');
+        } catch (restaurantError) {
+          console.error('⚠️ 레스토랑 생성 실패:', restaurantError);
+          // 레스토랑 생성 실패해도 사용자 생성은 성공으로 처리
+        }
+      }
 
       return {
         success: true,
@@ -135,6 +158,7 @@ class UserService {
         if (role.toUpperCase() === 'DONOR') {
           // 레스토랑 데이터
           return {
+            id: item.id,
             name: item.businessName,
             address: item.roadAddress || item.fullAddress,
             latitude: item.latitude,
@@ -144,6 +168,7 @@ class UserService {
         } else if (role.toUpperCase() === 'RECIPIENT') {
           // 수혜처 데이터
           return {
+            id: item.id,
             name: item.facilityName,
             address: item.roadAddress,
             latitude: item.latitude,
@@ -153,6 +178,7 @@ class UserService {
         } else if (role.toUpperCase() === 'FOOD_BANK') {
           // 푸드뱅크 데이터
           return {
+            id: item.id,
             name: item.businessName,
             address: item.roadAddress,
             latitude: item.latitude,
@@ -195,6 +221,101 @@ class UserService {
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
       throw new Error(`사용자 정보 조회 실패: ${error.message}`);
+    }
+  }
+
+  /**
+   * 사용자 프로필 업데이트
+   * @param {number} userId - 사용자 ID
+   * @param {object} updateData - 업데이트할 데이터
+   * @returns {Promise<object>} 업데이트 결과
+   */
+  async updateProfile(userId, updateData) {
+    try {
+      // 사용자 존재 확인
+      const user = await this.userRepo.findById(userId);
+      if (!user) {
+        throw new Error('사용자를 찾을 수 없습니다.');
+      }
+
+      // 사용자 정보 업데이트
+      const updatedUser = await this.userRepo.update(userId, updateData);
+
+      // DONOR role인 경우 레스토랑 정보도 업데이트
+      if (user.role === 'DONOR') {
+        try {
+          const restaurants = await this.restaurantRepo.findByManagerId(userId);
+          if (restaurants.length > 0) {
+            // 첫 번째 레스토랑 정보 업데이트
+            const restaurantUpdateData = {};
+            if (updateData.address !== undefined) {
+              restaurantUpdateData.address = updateData.address;
+            }
+            if (updateData.latitude !== undefined) {
+              restaurantUpdateData.latitude = updateData.latitude;
+            }
+            if (updateData.longitude !== undefined) {
+              restaurantUpdateData.longitude = updateData.longitude;
+            }
+            if (updateData.name !== undefined) {
+              restaurantUpdateData.name = updateData.name;
+            }
+
+            if (Object.keys(restaurantUpdateData).length > 0) {
+              await this.restaurantRepo.update(restaurants[0].id, restaurantUpdateData);
+              console.log('✅ DONOR 사용자 레스토랑 정보 업데이트 완료');
+            }
+          }
+        } catch (restaurantError) {
+          console.error('⚠️ 레스토랑 정보 업데이트 실패:', restaurantError);
+          // 레스토랑 업데이트 실패해도 사용자 업데이트는 성공으로 처리
+        }
+      }
+
+      return {
+        success: true,
+        message: '프로필이 성공적으로 업데이트되었습니다.',
+        data: updatedUser.toJSON()
+      };
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error);
+      throw new Error(`프로필 업데이트 실패: ${error.message}`);
+    }
+  }
+
+  /**
+   * DONOR 사용자의 레스토랑 정보 조회
+   * @param {number} userId - 사용자 ID
+   * @returns {Promise<object>} 레스토랑 정보
+   */
+  async getRestaurantByManagerId(userId) {
+    try {
+      // 사용자 존재 확인
+      const user = await this.userRepo.findById(userId);
+      if (!user) {
+        throw new Error('사용자를 찾을 수 없습니다.');
+      }
+
+      // DONOR role 확인
+      if (user.role !== 'DONOR') {
+        throw new Error('DONOR 역할의 사용자만 레스토랑 정보를 조회할 수 있습니다.');
+      }
+
+      // 레스토랑 정보 조회
+      const restaurants = await this.restaurantRepo.findByManagerId(userId);
+      
+      if (restaurants.length === 0) {
+        throw new Error('등록된 레스토랑이 없습니다.');
+      }
+
+      return {
+        success: true,
+        message: '레스토랑 정보 조회 성공',
+        data: restaurants[0].toJSON() // 첫 번째 레스토랑 반환
+      };
+    } catch (error) {
+      console.error('레스토랑 정보 조회 실패:', error);
+      throw new Error(`레스토랑 정보 조회 실패: ${error.message}`);
     }
   }
 
