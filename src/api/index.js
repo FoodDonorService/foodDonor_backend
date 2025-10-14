@@ -12,7 +12,7 @@ const router = express.Router();
 // API 라우트 등록
 router.use('/users', userRoutes);
 router.use('/donation', donationRoutes);
-router.use('/matches', matchRoutes);
+router.use('/match', matchRoutes);
 router.use('/public-data', publicDataRoutes);
 
 module.exports = router;
