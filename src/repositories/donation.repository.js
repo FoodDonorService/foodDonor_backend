@@ -103,8 +103,11 @@ class DonationRepository {
           d.quantity,
           d.expiration_date,
           d.status,
+          r.id as restaurant_id,
           r.name as restaurant_name,
-          r.address as restaurant_address
+          r.address as restaurant_address,
+          r.latitude as restaurant_latitude,
+          r.longitude as restaurant_longitude
         FROM Donations d
         LEFT JOIN Restaurants r ON d.restaurant_id = r.id
         WHERE d.status = 'AVAILABLE'

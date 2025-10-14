@@ -53,51 +53,49 @@ const createDonation = async (donationData) => {
  */
 const getDonationListByDistance = async (latitude, longitude) => {
   try {
-    // 데이터베이스에서 사용 가능한 기부 목록 조회
+    // 데이터베이스에서 사용 가능한 기부 목록 조회 (레스토랑 좌표 포함)
     const donations = await donationRepository.getAvailableDonations();
-    
-    // publicData.client.js의 getNearbyRestaurants 함수 사용
-    const publicDataClient = require('../clients/publicData.client');
-    
-    // 수혜자 위치를 한국 좌표계로 변환 (위경도 * 1000000)
-    const xCoord = longitude * 1000000;
-    const yCoord = latitude * 1000000;
-    
-    // 거리순으로 정렬된 레스토랑 목록 조회 (충분한 개수로 설정)
-    const nearbyRestaurants = await publicDataClient.getNearbyRestaurants(xCoord, yCoord, donations.length);
-    
-    // 기부 정보와 레스토랑 정보를 매핑
-    const donationList = donations.map(donation => {
-      // 레스토랑 정보 찾기
-      const restaurant = nearbyRestaurants.find(r => r.businessName === donation.restaurant_name);
-      
+
+    // 거리 계산 함수 (Haversine)
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const distanceKm = (lat1, lon1, lat2, lon2) => {
+      if (lat2 == null || lon2 == null) return Number.POSITIVE_INFINITY;
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    // 거리 계산 및 매핑
+    const mapped = donations.map(d => {
+      const dist = distanceKm(
+        latitude,
+        longitude,
+        Number(d.restaurant_latitude),
+        Number(d.restaurant_longitude)
+      );
       return {
-        donation_id: donation.id,
-        restaurant_name: donation.restaurant_name,
-        restaurant_address: donation.restaurant_address,
-        item_name: donation.item_name,
-        category: donation.category,
-        quantity: donation.quantity.toString(),
-        expiration_date: donation.expiration_date,
-        status: donation.status.toLowerCase()
+        donation_id: d.id,
+        restaurant_id: d.restaurant_id,
+        restaurant_name: d.restaurant_name,
+        restaurant_address: d.restaurant_address,
+        item_name: d.item_name,
+        category: d.category,
+        quantity: String(d.quantity),
+        expiration_date: d.expiration_date,
+        status: d.status.toLowerCase(),
+        distance_km: dist
       };
     });
-    
-    // 레스토랑 정보가 있는 기부만 필터링하고 거리순으로 정렬
-    const validDonations = donationList.filter(donation => {
-      return nearbyRestaurants.some(r => r.businessName === donation.restaurant_name);
-    });
-    
-    // 거리순으로 정렬 (getNearbyRestaurants에서 이미 정렬되어 있음)
-    const sortedDonations = [];
-    for (const restaurant of nearbyRestaurants) {
-      const matchingDonation = validDonations.find(d => d.restaurant_name === restaurant.businessName);
-      if (matchingDonation) {
-        sortedDonations.push(matchingDonation);
-      }
-    }
-    
-    return sortedDonations;
+
+    // 좌표 없는 항목(INF) 뒤로 보내며 거리순 정렬
+    mapped.sort((a, b) => (a.distance_km - b.distance_km));
+
+    return mapped;
 
   } catch (error) {
     console.error('거리순 기부처 목록 조회 서비스 오류:', error);
