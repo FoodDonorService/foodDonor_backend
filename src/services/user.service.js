@@ -54,6 +54,7 @@ class UserService {
       if (userData.role === 'DONOR') {
         try {
           const restaurant = new Restaurant({
+            id: userData.id,
             manager_id: createdUser.id,
             name: userData.name, // restaurantName이 없으면 사용자 이름 사용
             address: userData.address,
