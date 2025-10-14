@@ -2,10 +2,10 @@
 
 const matchRepository = require('../repositories/match.repository');
 const Match = require('../models/match.model');
+const publicDataClient = require('../clients/publicData.client');
 
 class MatchService {
   
-  const publicDataClient = require('../clients/publicData.client');
   async getAcceptedMatches(foodBankId) {
       try {
         // Validate input

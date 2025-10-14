@@ -154,9 +154,6 @@ class MatchRepository {
             throw error;
         }
     }
-  constructor() {
-    this.db = database;
-  }
 
   /**
    * 매칭 생성

@@ -54,7 +54,7 @@ class MatchController {
         error: error.message
       });
     }
-
+}
     //3. acceptMatch 메서드
     // 역할: 클라이언트가 요청한 매칭 수락 처리
     // 로직:
@@ -84,7 +84,7 @@ class MatchController {
         } catch (error) {
         return res.status(500).json({ status: 'error', message: error.message });
         }
-  }
+    }
 
     //4. rejectMatch 메서드
     // 역할: 매칭 거절 요청 처리
@@ -108,5 +108,4 @@ class MatchController {
         }
     }
 }
-
 module.exports = new MatchController();
