@@ -39,20 +39,28 @@ class MatchController {
     //  적절하면 matchService.acceptMatch(match_id) 호출해 매칭 수락 실행
     //  성공 시 HTTP 200과 결과 JSON 반환
     // 예외 처리: 에러 발생 시 HTTP 500 반환
+    // src/controllers/match.controller.js (핵심 체크 추가 예)
     async acceptMatch(req, res) {
         try {
-            const { match_id } = req.body;
-            const foodBankId = req.user.id;
-            if (!match_id || typeof match_id !== 'number') {
-                return res.status(400).json({ status: 'fail', message: 'Valid match_id is required.' });
-            }
-            // 서비스에 foodBankId 전달
-            const result = await matchService.acceptMatch(match_id,foodBankId);
-            res.status(200).json(result);
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
+        if (!req.session.userId) {
+            return res.status(401).json({ status: 'error', message: '인증이 필요합니다.' });
         }
-    }
+        if (req.session.userRole !== 'FOOD_BANK') {
+            return res.status(403).json({ status: 'error', message: '푸드뱅크만 수락할 수 있습니다.' });
+        }
+    
+        const matchId = Number(req.body.match_id);
+        if (!Number.isInteger(matchId)) {
+            return res.status(400).json({ status: 'fail', message: 'Valid match_id is required.' });
+        }
+    
+        const foodBankId = req.session.userId;
+        const result = await matchService.acceptMatch(matchId, foodBankId);
+        return res.status(200).json(result);
+        } catch (error) {
+        return res.status(500).json({ status: 'error', message: error.message });
+        }
+  }
 
     //4. rejectMatch 메서드
     // 역할: 매칭 거절 요청 처리

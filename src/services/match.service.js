@@ -37,7 +37,7 @@ class MatchService {
             throw new Error('Match is not in a pending state');
         }
 
-        match.accept(food_bank_id); // foodBankId는 예시로 1을 사용합니다.
+        match.accept(food_bank_id);
         await matchRepository.update(match);
 
         return {
