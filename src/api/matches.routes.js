@@ -10,9 +10,9 @@ router.get('/list',matchController.getPendingMatches);
 router.get('/list/accepted',matchController.getAcceptedMatches);
 
 //1.2.8 푸드뱅크 -> 매치 수락
-router.get('/accept',matchController.acceptMatch);
+router.post('/accept',matchController.acceptMatch);
 
 //1.2.9 푸드뱅크 ->매치 거절
-router.get('/reject',matchController.rejectMatch);
+router.post('/reject',matchController.rejectMatch);
 
 module.exports = router;
