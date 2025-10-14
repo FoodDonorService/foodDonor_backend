@@ -1,3 +1,9 @@
+// src/api/matches.routes.js
+
+const express = require('express');
+const router = express.Router();
+const matchController = require('../controllers/match.controller');
+
 //
 const express = require('express');
 const matchController = require('../controllers/match.controller')

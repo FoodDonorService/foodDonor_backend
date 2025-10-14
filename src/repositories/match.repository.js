@@ -107,43 +107,34 @@ class MatchRepository {
         }
     }
 
-    /**
-     * ACCEPTED 상태인 매칭 목록과 상세 정보 조회
-     * @returns {Promise<object[]>} 수락된 매칭 목록
-     */
-    async findAcceptedWithDetails() {
-        try {
-            const connection = await this.db.connect();
-            const sql = `
-        SELECT
-          m.id AS match_id,
-          r.id AS recipient_id,
-          r.name AS recipient_name,
-          r.address AS recipient_address,
-          r.phone_number AS recipient_phone_number,
-          u.id AS restaurant_id,
-          u.name AS restaurant_name,
-          u.address AS restaurant_address,
-          d.id AS donation_id,
-          d.item_name AS donation_item_name,
-          d.category AS donation_category,
-          d.quantity AS donation_quantity,
-          d.expiration_date AS donation_expiration_date
-        FROM Matches AS m
-        JOIN Recipients AS r ON m.recipient_id = r.id
-        JOIN Donations AS d ON m.donation_id = d.id
-        JOIN Users AS u ON d.user_id = u.id
-        WHERE m.status = 'ACCEPTED'
-        ORDER BY m.created_at DESC
-      `;
-            const [rows] = await connection.execute(sql);
-            await this.db.disconnect();
-            return rows;
-        } catch (error) {
-            console.error('수락된 매칭 목록 조회 실패:', error);
-            throw error;
-        }
+    async getAcceptedMatches(foodBankId) {
+    const query = `
+      SELECT 
+        m.id as match_id,
+        m.recipient_id,
+        rest.id as restaurant_id,
+        rest.name as restaurant_name,
+        rest.address as restaurant_address,
+        d.id as donation_id,
+        d.item_name as donation_item_name,
+        d.category as donation_category,
+        d.quantity as donation_quantity,
+        d.expiration_date as donation_expiration_date
+      FROM matches m
+      INNER JOIN donations d ON m.donation_id = d.id
+      INNER JOIN restaurants rest ON d.restaurant_id = rest.id
+      WHERE m.food_bank_id = ? AND m.status = 'ACCEPTED'
+      ORDER BY m.created_at DESC
+    `;
+
+    try {
+      const [rows] = await db.execute(query, [foodBankId]);
+      return rows;
+    } catch (error) {
+      console.error('Error fetching accepted matches:', error);
+      throw new Error('Failed to fetch accepted matches');
     }
+  }
 
     /**
      * 매칭 삭제

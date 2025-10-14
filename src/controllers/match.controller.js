@@ -22,13 +22,37 @@ class MatchController {
     // 역할: 수락된 매칭 목록 조회 처리
     // 로직: matchService.getAcceptedMatches()를 호출해 수락된 매칭을 받아 HTTP 200과 JSON으로 응답
     // 예외 처리: 에러시 HTTP 500 반환
+  
     async getAcceptedMatches(req, res) {
-        try {
-            const result = await matchService.getAcceptedMatches();
-            res.status(200).json(result);
-        } catch (error) {
-            res.status(500).json({ status: 'error', message: error.message });
-        }
+    try {
+      // Get food bank ID from session
+      const foodBankId = req.session.userId;
+      
+      if (!foodBankId) {
+        return res.status(401).json({
+          status: 'error',
+          message: '로그인이 필요합니다'
+        });
+      }
+
+      // Call service to get matches
+      const result = await matchService.getAcceptedMatches(foodBankId);
+
+      // Return success response
+      res.status(200).json({
+        status: 'success',
+        message: '매치 상세정보 조회 성공',
+        data: result.data
+      });
+
+    } catch (error) {
+      console.error('Error in MatchController.getAcceptedMatches:', error);
+      
+      res.status(500).json({
+        status: 'error',
+        message: '매치 상세정보 조회 실패',
+        error: error.message
+      });
     }
 
     //3. acceptMatch 메서드
