@@ -1,6 +1,7 @@
 // src/controllers/donation.controller.js
 
 const donationService = require('../services/donation.service');
+const userService = require('../services/user.service');
 
 /**
  * 기부 등록
@@ -89,29 +90,20 @@ const getDonationList = async (req, res) => {
       });
     }
 
-    const { lat, lng } = req.query;
+    // 사용자 엔티티의 위도/경도 사용
+    const me = await userService.getUserById(req.user.id);
+    const latitude = me?.data?.latitude;
+    const longitude = me?.data?.longitude;
 
-    // 위치 정보 검증
-    if (!lat || !lng) {
+    if (latitude == null || longitude == null) {
       return res.status(400).json({
         status: 'error',
-        message: '위도(lat)와 경도(lng) 정보가 필요합니다.'
-      });
-    }
-
-    // 위도, 경도 숫자 검증
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lng);
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-      return res.status(400).json({
-        status: 'error',
-        message: '유효한 위도와 경도 값을 입력해주세요.'
+        message: '사용자 정보에 위도/경도가 없습니다. 프로필을 먼저 설정해주세요.'
       });
     }
 
     // 기부처 목록 조회
-    const donationList = await donationService.getDonationListByDistance(latitude, longitude);
+    const donationList = await donationService.getDonationListByDistance(Number(latitude), Number(longitude));
 
     res.json({
       status: 'success',
