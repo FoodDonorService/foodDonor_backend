@@ -52,7 +52,7 @@ const createDonation = async (req, res) => {
       item_name,
       quantity,
       expiration_date,
-      userId: req.user.id
+      userId: req.user.id,
     };
 
     const result = await donationService.createDonation(donationData);
