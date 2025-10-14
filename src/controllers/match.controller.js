@@ -42,10 +42,12 @@ class MatchController {
     async acceptMatch(req, res) {
         try {
             const { match_id } = req.body;
+            const foodBankId = req.user.id;
             if (!match_id || typeof match_id !== 'number') {
                 return res.status(400).json({ status: 'fail', message: 'Valid match_id is required.' });
             }
-            const result = await matchService.acceptMatch(match_id);
+            // 서비스에 foodBankId 전달
+            const result = await matchService.acceptMatch(match_id,foodBankId);
             res.status(200).json(result);
         } catch (error) {
             res.status(500).json({ status: 'error', message: error.message });

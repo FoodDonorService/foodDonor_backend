@@ -10,6 +10,10 @@ class PublicDataController {
    */
   async searchRestaurants(req, res) {
     try {
+      //입략: 검색어  q를 입력
+      //검증: 검색어가 없으면 HTTP 400 error
+      //처리: publicDataService.searchRestaurants(searchTerm) 호출 ->서비스 계층에서 실제 검색 수행
+      //출력: JSON형태로 검색 결과 반환
       const { q: searchTerm } = req.query;
       
       if (!searchTerm) {
@@ -38,6 +42,8 @@ class PublicDataController {
    */
   async searchRecipients(req, res) {
     try {
+      //로직 구조: 위의 searchRestaurants와 동일하나, 호출하는 서비스 함수만 다름 (searchRecipients)
+      //역할: ‘필요한 검색어 입력 → 서비스 로직 호출 → 결과 전송’ 구조
       const { q: searchTerm } = req.query;
       
       if (!searchTerm) {
@@ -94,6 +100,8 @@ class PublicDataController {
    */
   async getNearbyRestaurants(req, res) {
     try {
+      //기능: publicDataService.getNearbyRestaurants(xCoord, yCoord, limitNum) 호출
+      //출력: 근처 위치의 레스토랑 리스트 JSON 응답
       const { x, y, limit } = req.query;
       
       if (!x || !y) {
@@ -133,6 +141,7 @@ class PublicDataController {
    */
   async getNearbyRecipients(req, res) {
     try {
+      //로직: 위와 거의 같지만, 파라미터명이 x, y → lat, lng로 바뀜 (일반적인 위도/경도 명칭)
       const { lat, lng, limit } = req.query;
       
       if (!lat || !lng) {
@@ -172,6 +181,7 @@ class PublicDataController {
    */
   async getNearbyFoodbanks(req, res) {
     try {
+      //목적: 사용자 위치를 기준으로 가까운 푸드뱅크 제공
       const { lat, lng, limit } = req.query;
       
       if (!lat || !lng) {
@@ -211,6 +221,7 @@ class PublicDataController {
    */
   async searchAll(req, res) {
     try {
+      //검색어로 레스트,수혜처, 푸드뱅크 등을 한꺼번에 검색
       const { q: searchTerm } = req.query;
       
       if (!searchTerm) {

@@ -26,7 +26,7 @@ class MatchService {
         };
     }
 
-    async acceptMatch(matchId) {
+    async acceptMatch(matchId,food_bank_id) {
         const matchData = await matchRepository.findById(matchId);
         if (!matchData) {
             throw new Error('Match not found');
@@ -37,7 +37,7 @@ class MatchService {
             throw new Error('Match is not in a pending state');
         }
 
-        match.accept(1); // foodBankId는 예시로 1을 사용합니다.
+        match.accept(food_bank_id); // foodBankId는 예시로 1을 사용합니다.
         await matchRepository.update(match);
 
         return {
