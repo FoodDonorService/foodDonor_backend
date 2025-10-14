@@ -2,6 +2,7 @@
 
 const express = require('express');
 const userController = require('../controllers/user.controller');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -33,27 +34,27 @@ router.get('/search', userController.searchByRole);
  * @desc 현재 로그인한 사용자 정보 조회
  * @access Private
  */
-router.get('/me', userController.getCurrentUser);
+router.get('/me', authenticate, userController.getCurrentUser);
 
 /**
  * @route POST /api/users/logout
  * @desc 사용자 로그아웃
  * @access Private
  */
-router.post('/logout', userController.logout);
+router.post('/logout', authenticate, userController.logout);
 
 /**
  * @route PUT /api/users/profile
  * @desc 사용자 프로필 업데이트
  * @access Private
  */
-router.put('/profile', userController.updateProfile);
+router.put('/profile', authenticate, userController.updateProfile);
 
 /**
  * @route GET /api/users/restaurant
  * @desc DONOR 사용자의 레스토랑 정보 조회
  * @access Private (DONOR only)
  */
-router.get('/restaurant', userController.getRestaurant);
+router.get('/restaurant', authenticate, userController.getRestaurant);
 
 module.exports = router;

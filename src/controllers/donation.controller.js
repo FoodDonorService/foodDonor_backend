@@ -9,16 +9,10 @@ const donationService = require('../services/donation.service');
  */
 const createDonation = async (req, res) => {
   try {
-    // 세션에서 사용자 정보 확인
-    if (!req.session.userId) {
-      return res.status(401).json({ 
-        status: 'error', 
-        message: '인증이 필요합니다.' 
-      });
-    }
+    // JWT 인증 사용 (authenticate 미들웨어가 보장)
 
     // DONOR 역할 확인
-    if (req.session.userRole !== 'DONOR') {
+    if (req.user.role !== 'DONOR') {
       return res.status(403).json({ 
         status: 'error', 
         message: '기부자만 기부를 등록할 수 있습니다.' 
@@ -58,7 +52,7 @@ const createDonation = async (req, res) => {
       item_name,
       quantity,
       expiration_date,
-      userId: req.session.userId
+      userId: req.user.id
     };
 
     const result = await donationService.createDonation(donationData);

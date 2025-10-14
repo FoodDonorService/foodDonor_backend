@@ -1,6 +1,7 @@
 // src/controllers/user.controller.js
 
 const userService = require('../services/user.service');
+const { signToken } = require('../utils/jwt');
 
 class UserController {
   /**
@@ -34,16 +35,13 @@ class UserController {
   async login(req, res) {
     try {
       const result = await userService.login(req.body);
-      
-      // 로그인 성공 시 사용자 정보를 세션에 저장 (쿠키 방식)
-      req.session.userId = result.user.id;
-      req.session.userRole = result.user.role;
-      req.session.username = result.user.username;
-      
+      // JWT 발급
+      const token = signToken({ id: result.user.id, role: result.user.role, username: result.user.username });
+
       res.status(200).json({
         status: 'success',
         message: result.message,
-        data: result.data
+        data: { token }
       });
     } catch (error) {
       console.error('로그인 컨트롤러 오류:', error);
@@ -93,14 +91,7 @@ class UserController {
    */
   async getCurrentUser(req, res) {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          status: 'error',
-          message: '로그인이 필요합니다.'
-        });
-      }
-
-      const result = await userService.getUserById(req.session.userId);
+      const result = await userService.getUserById(req.user.id);
       
       res.status(200).json({
         status: 'success',
@@ -123,22 +114,8 @@ class UserController {
    */
   async logout(req, res) {
     try {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('세션 삭제 오류:', err);
-          return res.status(500).json({
-            status: 'error',
-            message: '로그아웃 중 오류가 발생했습니다.'
-          });
-        }
-
-        res.clearCookie('connect.sid'); // 세션 쿠키 삭제
-        res.status(200).json({
-          status: 'success',
-          message: '로그아웃 되었습니다.',
-          data: null
-        });
-      });
+      // JWT 방식: 서버 상태 없음. 클라이언트가 토큰 삭제하면 됨
+      res.status(200).json({ status: 'success', message: '로그아웃되었습니다.', data: null });
     } catch (error) {
       console.error('로그아웃 컨트롤러 오류:', error);
       res.status(500).json({
@@ -155,15 +132,8 @@ class UserController {
    */
   async updateProfile(req, res) {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          status: 'error',
-          message: '로그인이 필요합니다.'
-        });
-      }
-
       const updateData = req.body;
-      const result = await userService.updateProfile(req.session.userId, updateData);
+      const result = await userService.updateProfile(req.user.id, updateData);
       
       res.status(200).json({
         status: 'success',

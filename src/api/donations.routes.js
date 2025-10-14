@@ -2,6 +2,7 @@
 
 const express = require('express');
 const donationController = require('../controllers/donation.controller');
+const { authenticate, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const router = express.Router();
  * @body {string} expiration_date - 유통기한 (YYYY-MM-DD)
  * @access Private (DONOR role required)
  */
-router.post('/', donationController.createDonation);
+router.post('/', authenticate, authorizeRoles('DONOR'), donationController.createDonation);
 
 /**
  * @route GET /donation/list
@@ -23,7 +24,7 @@ router.post('/', donationController.createDonation);
  * @query {number} lng - 수혜자 경도
  * @access Private (RECIPIENT role required)
  */
-router.get('/list', donationController.getDonationList);
+router.get('/list', authenticate, authorizeRoles('RECIPIENT'), donationController.getDonationList);
 
 /**
  * @route POST /donation/:donation_id/accept
@@ -32,6 +33,6 @@ router.get('/list', donationController.getDonationList);
  * @body {number} donation_id - 기부 ID (URL 파라미터와 동일해야 함)
  * @access Private (RECIPIENT role required)
  */
-router.post('/:donation_id/accept', donationController.acceptDonation);
+router.post('/:donation_id/accept', authenticate, authorizeRoles('RECIPIENT'), donationController.acceptDonation);
 
 module.exports = router;

@@ -25,16 +25,8 @@ class MatchController {
   
     async getAcceptedMatches(req, res) {
     try {
-      // Get food bank ID from session
-      const foodBankId = req.session.userId;
+      const foodBankId = req.user.id;
       
-      if (!foodBankId) {
-        return res.status(401).json({
-          status: 'error',
-          message: '로그인이 필요합니다'
-        });
-      }
-
       // Call service to get matches
       const result = await matchService.getAcceptedMatches(foodBankId);
 
@@ -66,10 +58,8 @@ class MatchController {
     // src/controllers/match.controller.js (핵심 체크 추가 예)
     async acceptMatch(req, res) {
         try {
-        if (!req.session.userId) {
-            return res.status(401).json({ status: 'error', message: '인증이 필요합니다.' });
-        }
-        if (req.session.userRole !== 'FOOD_BANK') {
+        // auth 미들웨어에서 인증/역할 체크 권장
+        if (req.user.role !== 'FOOD_BANK') {
             return res.status(403).json({ status: 'error', message: '푸드뱅크만 수락할 수 있습니다.' });
         }
     
@@ -78,7 +68,7 @@ class MatchController {
             return res.status(400).json({ status: 'fail', message: 'Valid match_id is required.' });
         }
     
-        const foodBankId = req.session.userId;
+        const foodBankId = req.user.id;
         const result = await matchService.acceptMatch(matchId, foodBankId);
         return res.status(200).json(result);
         } catch (error) {
