@@ -156,14 +156,7 @@ class UserController {
    */
   async getRestaurant(req, res) {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({
-          status: 'error',
-          message: '로그인이 필요합니다.'
-        });
-      }
-
-      const result = await userService.getRestaurantByManagerId(req.session.userId);
+      const result = await userService.getRestaurantByManagerId(req.user.id);
       
       res.status(200).json({
         status: 'success',

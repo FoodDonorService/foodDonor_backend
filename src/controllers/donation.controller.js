@@ -81,16 +81,8 @@ const createDonation = async (req, res) => {
  */
 const getDonationList = async (req, res) => {
   try {
-    // 세션에서 사용자 정보 확인
-    if (!req.session.userId) {
-      return res.status(401).json({ 
-        status: 'error', 
-        message: '인증이 필요합니다.' 
-      });
-    }
-
-    // RECIPIENT 역할 확인
-    if (req.session.userRole !== 'RECIPIENT') {
+    // RECIPIENT 역할 확인 (JWT)
+    if (req.user.role !== 'RECIPIENT') {
       return res.status(403).json({ 
         status: 'error', 
         message: '수혜자만 기부처 정보를 조회할 수 있습니다.' 
@@ -145,16 +137,8 @@ const getDonationList = async (req, res) => {
  */
 const acceptDonation = async (req, res) => {
   try {
-    // 세션에서 사용자 정보 확인
-    if (!req.session.userId) {
-      return res.status(401).json({ 
-        status: 'error', 
-        message: '인증이 필요합니다.' 
-      });
-    }
-
-    // RECIPIENT 역할 확인
-    if (req.session.userRole !== 'RECIPIENT') {
+    // RECIPIENT 역할 확인 (JWT)
+    if (req.user.role !== 'RECIPIENT') {
       return res.status(403).json({ 
         status: 'error', 
         message: '수혜자만 기부를 수락할 수 있습니다.' 
@@ -182,7 +166,7 @@ const acceptDonation = async (req, res) => {
     }
 
     // 기부 수락 처리
-    const result = await donationService.acceptDonation(donationId, req.session.userId);
+    const result = await donationService.acceptDonation(donationId, req.user.id);
 
     res.status(201).json({
       status: 'success',
