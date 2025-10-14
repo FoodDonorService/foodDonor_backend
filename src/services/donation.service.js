@@ -3,7 +3,7 @@
 const donationRepository = require('../repositories/donation.repository');
 const matchRepository = require('../repositories/match.repository');
 const restaurantRepository = require('../repositories/restaurant.repository');
-const publicDataClient = require('../clients/publicData.client');
+const userRepository = require('../repositories/user.repository');
 const Donation = require('../models/donation.model');
 const Match = require('../models/match.model');
 
@@ -106,7 +106,7 @@ const getDonationListByDistance = async (latitude, longitude) => {
 /**
  * 기부 수락 서비스 (매칭 생성)
  * @param {number} donationId - 기부 ID
- * @param {number} recipientId - 수혜자 ID (세션에서 가져옴)
+ * @param {string} recipientId - 수혜자 ID (JWT)
  * @returns {Promise<Object>} 생성된 매칭 정보
  */
 const acceptDonation = async (donationId, recipientId) => {
@@ -139,24 +139,43 @@ const acceptDonation = async (donationId, recipientId) => {
       throw new Error('레스토랑 정보를 찾을 수 없습니다.');
     }
 
-    // 6. 가장 가까운 푸드뱅크 찾기
-    // 레스토랑 좌표를 한국 좌표계로 변환 (위경도 * 1000000)
-    const xCoord = restaurant.longitude * 1000000;
-    const yCoord = restaurant.latitude * 1000000;
-    
-    const nearbyFoodbanks = await publicDataClient.getNearbyFoodbanks(restaurant.latitude, restaurant.longitude, 1);
-    
-    if (nearbyFoodbanks.length === 0) {
-      throw new Error('근처에 푸드뱅크를 찾을 수 없습니다.');
+    // 6. Users 중 FOOD_BANK 역할 사용자들 중에서 가장 가까운 사용자 선택
+    const foodBankUsers = await userRepository.findByRoleAndSearch('FOOD_BANK', '');
+    if (!foodBankUsers || foodBankUsers.length === 0) {
+      throw new Error('등록된 푸드뱅크 사용자가 없습니다.');
     }
 
-    const nearestFoodbank = nearbyFoodbanks[0];
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const distanceKm = (lat1, lon1, lat2, lon2) => {
+      if (lat2 == null || lon2 == null) return Number.POSITIVE_INFINITY;
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    let nearestFoodBankUser = null;
+    let minDist = Number.POSITIVE_INFINITY;
+    for (const fb of foodBankUsers) {
+      const dist = distanceKm(restaurant.latitude, restaurant.longitude, fb.latitude, fb.longitude);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestFoodBankUser = fb;
+      }
+    }
+    if (!nearestFoodBankUser) {
+      throw new Error('근처에 푸드뱅크 사용자를 찾을 수 없습니다.');
+    }
     
     // 7. 매칭 생성
     const match = new Match({
       donation_id: donationId,
       recipient_id: recipientId,
-      food_bank_id: nearestFoodbank.id, // S3 데이터의 ID 사용
+      food_bank_id: nearestFoodBankUser.id, // Users 테이블의 ID
       status: 'PENDING'
     });
 
@@ -169,7 +188,7 @@ const acceptDonation = async (donationId, recipientId) => {
       match_id: createdMatch.id,
       recipient_id: recipientId,
       donation_id: donationId,
-      food_bank_id: nearestFoodbank.id,
+      food_bank_id: nearestFoodBankUser.id,
       status: 'pending'
     };
 
