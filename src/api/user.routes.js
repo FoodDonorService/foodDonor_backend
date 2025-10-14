@@ -49,4 +49,11 @@ router.post('/logout', userController.logout);
  */
 router.put('/profile', userController.updateProfile);
 
+/**
+ * @route GET /api/users/restaurant
+ * @desc DONOR 사용자의 레스토랑 정보 조회
+ * @access Private (DONOR only)
+ */
+router.get('/restaurant', userController.getRestaurant);
+
 module.exports = router;

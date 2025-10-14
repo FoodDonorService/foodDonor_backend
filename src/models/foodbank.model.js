@@ -5,6 +5,7 @@
  */
 class Foodbank {
   constructor(data) {
+    this.id = data['ID'] || data['id'] || null;
     this.businessName = data['사업장명'] || '';
     this.businessType = data['사업장유형'] || '';
     this.roadAddress = data['소재지도로명주소'] || '';
@@ -48,6 +49,7 @@ class Foodbank {
    */
   toJSON() {
     return {
+      id: this.id,
       businessName: this.businessName,
       businessType: this.businessType,
       roadAddress: this.roadAddress,

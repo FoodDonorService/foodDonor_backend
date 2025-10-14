@@ -18,12 +18,13 @@ class UserRepository {
       const connection = await this.db.connect();
       
       const sql = `
-        INSERT INTO Users (username, password_hash, name, role, address, latitude, longitude, phone_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Users (username, id, password_hash, name, role, address, latitude, longitude, phone_number)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const values = [
         userData.username,
+        userData.id,
         userData.passwordHash,
         userData.name,
         userData.role,
@@ -37,7 +38,7 @@ class UserRepository {
       await this.db.disconnect();
 
       // 생성된 사용자 조회
-      return await this.findById(result.insertId);
+      return await this.findByUsername(userData.username);
     } catch (error) {
       console.error('사용자 생성 실패:', error);
       throw error;
