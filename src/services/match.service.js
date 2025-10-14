@@ -9,7 +9,7 @@ class MatchService {
   async getAcceptedMatches(foodBankId) {
       try {
         // Validate input
-        if (!foodBankId || typeof foodBankId !== 'number') {
+        if (!foodBankId || typeof foodBankId !== 'string') {
           throw new Error('Invalid food bank ID');
         }
 
@@ -22,7 +22,7 @@ class MatchService {
         // 3. Merge data: DB matches + S3 recipient info
         const mergedMatches = dbMatches.map(match => {
           // Find recipient info from S3 data by ID
-          const recipient = recipientsFromS3.find(r => r.id == match.recipient_id);
+          const recipient = recipientsFromS3.find(r => r.id === match.recipient_id);
 
           return {
             match_id: match.match_id,
@@ -74,7 +74,7 @@ class MatchService {
         };
     }
 
-    async acceptMatch(matchId,food_bank_id) {
+    async acceptMatch(matchId, food_bank_id) {
         const matchData = await matchRepository.findById(matchId);
         if (!matchData) {
             throw new Error('Match not found');
@@ -86,7 +86,7 @@ class MatchService {
         }
 
         match.accept(food_bank_id);
-        await matchRepository.update(match);
+        await matchRepository.update(match.id, { status: match.status, foodBankId: food_bank_id });
 
         return {
             status: "success",

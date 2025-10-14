@@ -73,7 +73,7 @@ class DatabaseInitializer {
     const sql = `
       CREATE TABLE IF NOT EXISTS Users (
         username VARCHAR(255) PRIMARY KEY COMMENT 'Login ID or Email',
-        id VARCHAR(255) NOT NULL COMMENT 'Business ID (can be duplicated with different roles)',
+        id VARCHAR(36) NOT NULL COMMENT 'Business ID (can be duplicated with different roles)',
         password_hash VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL COMMENT 'Name of the person or organization',
         role VARCHAR(50) NOT NULL COMMENT "Enum: 'DONOR', 'RECIPIENT', 'FOOD_BANK'",
@@ -100,7 +100,7 @@ class DatabaseInitializer {
     const sql = `
       CREATE TABLE IF NOT EXISTS Restaurants (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        manager_id INT NOT NULL COMMENT 'FK to the DONOR user who manages this restaurant',
+        manager_id VARCHAR(36) NOT NULL COMMENT 'FK to the DONOR user who manages this restaurant',
         name VARCHAR(255) NOT NULL,
         address VARCHAR(255) NOT NULL,
         latitude DECIMAL(10, 8),
@@ -151,8 +151,8 @@ class DatabaseInitializer {
       CREATE TABLE IF NOT EXISTS Matches (
         id INT AUTO_INCREMENT PRIMARY KEY,
         donation_id INT UNIQUE NOT NULL COMMENT 'A donation can only be part of one match',
-        recipient_id INT NOT NULL COMMENT 'FK to the RECIPIENT user',
-        food_bank_id INT COMMENT 'FK to the FOOD_BANK user who handled the match',
+        recipient_id VARCHAR(36) NOT NULL COMMENT 'FK to the RECIPIENT user',
+        food_bank_id VARCHAR(36) COMMENT 'FK to the FOOD_BANK user who handled the match',
         status VARCHAR(50) NOT NULL DEFAULT 'PENDING' COMMENT "Enum: 'PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED'",
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of the initial request from the recipient',
         updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Timestamp of the last status update by the food bank',
@@ -179,7 +179,7 @@ class DatabaseInitializer {
       CREATE TABLE IF NOT EXISTS Match_Logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         match_id INT NOT NULL,
-        actor_id INT NOT NULL COMMENT 'User who performed the action (e.g., Recipient, Food Bank)',
+        actor_id VARCHAR(36) NOT NULL COMMENT 'User who performed the action (e.g., Recipient, Food Bank)',
         previous_status VARCHAR(50),
         new_status VARCHAR(50) NOT NULL,
         notes TEXT COMMENT 'Optional notes about the status change',
