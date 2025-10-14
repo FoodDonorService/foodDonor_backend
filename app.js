@@ -8,27 +8,32 @@ const apiRoutes = require('./src/api');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 프록시 뒤에서 HTTPS 인식(예: Nginx/ELB/CloudFront)
+app.set('trust proxy', 1);
+
 // 미들웨어 설정
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// CORS 설정 (모든 출처 허용 + 자격 증명 지원, 안전한 Origin 반영)
+// CORS 설정 (명시적 허용 Origin + 자격 증명 지원)
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_ORIGIN,
+  'http://food-donor-frontend-v1.s3-website.ap-northeast-2.amazonaws.com',
+  'http://localhost:3000'
+].filter(Boolean);
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
     res.header('Access-Control-Allow-Credentials', 'true');
-  } else {
-    // 비브라우저 클라이언트(curl 등) 대비 기본 허용
-    res.header('Access-Control-Allow-Origin', '*');
   }
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
 
   if (req.method === 'OPTIONS') {
-    // Preflight 요청 빠른 응답
     return res.sendStatus(204);
   }
   next();
@@ -40,7 +45,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // HTTPS 사용 시 true로 변경
+    // 크로스사이트 쿠키 전송 위해 프로덕션에서는 SameSite=None + Secure 필요
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24시간
   }
