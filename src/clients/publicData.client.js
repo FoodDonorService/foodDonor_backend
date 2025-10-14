@@ -9,9 +9,11 @@ const Recipient = require('../models/recipient.model');
 const Foodbank = require('../models/foodbank.model');
 
 class PublicDataClient {
+  //S3 클라이언트를 초기화
   constructor() {
     // .env 파일의 AWS_ 키들을 자동으로 인식하여 클라이언트를 설정합니다.
     this.s3Client = new S3Client({
+      //.env 파일에 정의된 환경 변수(AWS_REGION, S3_BUCKET_NAME)를 사용하여 설정을 관리
       region: process.env.AWS_REGION,
     });
     this.bucketName = process.env.S3_BUCKET_NAME;
@@ -22,6 +24,8 @@ class PublicDataClient {
    * @param {string} fileName - S3 파일명
    * @returns {Promise<object[]>} CSV 데이터 배열
    */
+  //핵심 유틸리티 메서드입니다.
+  //S3에서 파일 객체를 가져오는 로직을 담당
   async getCsvDataFromS3(fileName) {
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
@@ -34,6 +38,7 @@ class PublicDataClient {
       return new Promise((resolve, reject) => {
         const results = [];
         // Body는 스트림 형태이므로 csv-parser에 파이프로 연결합니다.
+        //스트림의 data, end, error 이벤트를 처리하기 위해 Promise를 사용하여 async/await 구문과 자연스럽게 통합했습니다.
         Body.pipe(csv())
           .on('data', (data) => results.push(data))
           .on('end', () => resolve(results))
@@ -50,12 +55,14 @@ class PublicDataClient {
    * @returns {Promise<Restaurant[]>} 레스토랑 데이터 배열
    */
   async getRestaurantsFromS3() {
+    //getCsvDataFromS3를 호출하여 특정 CSV 파일의 데이터를 가져옵니다.
     const data = await this.getCsvDataFromS3('csv/Restaurants.csv');
     console.log('CSV 컬럼명들:', Object.keys(data[0] || {}));
     console.log('첫 번째 데이터 샘플:', data[0]);
     console.log('좌표 데이터 확인:');
     console.log('X:', data[0]['좌표정보(X)'], 'Type:', typeof data[0]['좌표정보(X)']);
     console.log('Y:', data[0]['좌표정보(Y)'], 'Type:', typeof data[0]['좌표정보(Y)']);
+    //파싱된 순수 JSON 객체 배열을 각각의 모델 클래스(S3Restaurant, Recipient 등) 인스턴스 배열로 변환
     return data.map(item => new S3Restaurant(item));
   }
 
@@ -83,6 +90,7 @@ class PublicDataClient {
    * @returns {Promise<Restaurant[]>} 검색된 레스토랑 배열
    */
   async searchRestaurantsByName(searchTerm) {
+    //get...FromS3()를 호출해 전체 데이터를 먼저 가져온 후, JavaScript의 filter 메서드를 사용해 메모리 상에서 검색을 수행
     const restaurants = await this.getRestaurantsFromS3();
     
     // 검색어가 없으면 모든 레스토랑 반환
