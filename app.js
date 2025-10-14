@@ -46,12 +46,12 @@ app.use(session({
   }
 }));
 
-app.get('/', (req, res) => {
+// API 라우트 등록
+app.use('/', apiRoutes);
+
+app.get('/check', (req, res) => {
   res.send('Food Donor Backend Server is Running!');
 });
-
-// API 라우트 등록
-app.use('/api', apiRoutes);
 
 // 서버 시작
 app.listen(PORT, () => {
