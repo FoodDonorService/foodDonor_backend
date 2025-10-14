@@ -138,18 +138,9 @@ const acceptDonation = async (req, res) => {
     }
 
     const { donation_id } = req.params;
-    const { donation_id: bodyDonationId } = req.body;
-
-    // URL 파라미터와 body의 donation_id가 일치하는지 확인
-    if (donation_id !== bodyDonationId) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'URL 파라미터와 요청 본문의 donation_id가 일치하지 않습니다.'
-      });
-    }
 
     // donation_id 검증
-    const donationId = parseInt(donation_id);
+    const donationId = parseInt(donation_id, 10);
     if (isNaN(donationId) || donationId <= 0) {
       return res.status(400).json({
         status: 'error',
