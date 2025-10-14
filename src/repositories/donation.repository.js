@@ -121,6 +121,31 @@ class DonationRepository {
       throw error;
     }
   }
+
+  /**
+   * 기부 상태 업데이트
+   * @param {number} id - 기부 ID
+   * @param {string} status - 새로운 상태
+   * @returns {Promise<Donation|null>} 업데이트된 기부 또는 null
+   */
+  async updateStatus(id, status) {
+    try {
+      const connection = await this.db.connect();
+      
+      const sql = 'UPDATE Donations SET status = ?, updated_at = NOW() WHERE id = ?';
+      const [result] = await connection.execute(sql, [status, id]);
+      await this.db.disconnect();
+
+      if (result.affectedRows === 0) {
+        return null;
+      }
+
+      return await this.findById(id);
+    } catch (error) {
+      console.error('기부 상태 업데이트 쿼리 오류:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new DonationRepository();

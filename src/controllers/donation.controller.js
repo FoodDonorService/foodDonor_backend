@@ -144,7 +144,82 @@ const getDonationList = async (req, res) => {
   }
 };
 
+/**
+ * 기부 수락 (매칭 생성)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const acceptDonation = async (req, res) => {
+  try {
+    // 세션에서 사용자 정보 확인
+    if (!req.session.userId) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: '인증이 필요합니다.' 
+      });
+    }
+
+    // RECIPIENT 역할 확인
+    if (req.session.userRole !== 'RECIPIENT') {
+      return res.status(403).json({ 
+        status: 'error', 
+        message: '수혜자만 기부를 수락할 수 있습니다.' 
+      });
+    }
+
+    const { donation_id } = req.params;
+    const { donation_id: bodyDonationId } = req.body;
+
+    // URL 파라미터와 body의 donation_id가 일치하는지 확인
+    if (donation_id !== bodyDonationId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'URL 파라미터와 요청 본문의 donation_id가 일치하지 않습니다.'
+      });
+    }
+
+    // donation_id 검증
+    const donationId = parseInt(donation_id);
+    if (isNaN(donationId) || donationId <= 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: '유효한 donation_id를 입력해주세요.'
+      });
+    }
+
+    // 기부 수락 처리
+    const result = await donationService.acceptDonation(donationId, req.session.userId);
+
+    res.status(201).json({
+      status: 'success',
+      message: '매칭 요청이 등록되었습니다.',
+      data: result
+    });
+
+  } catch (error) {
+    console.error('기부 수락 오류:', error);
+    
+    // 에러 메시지에 따라 적절한 상태 코드 설정
+    let statusCode = 500;
+    if (error.message.includes('찾을 수 없습니다') || error.message.includes('이미 처리된')) {
+      statusCode = 404;
+    } else if (error.message.includes('이미 매칭이 생성된')) {
+      statusCode = 409;
+    } else if (error.message.includes('근처에 푸드뱅크를 찾을 수 없습니다')) {
+      statusCode = 404;
+    }
+
+    res.status(statusCode).json({
+      status: 'error',
+      message: error.message || '기부 수락 중 오류가 발생했습니다.'
+    });
+  }
+};
+
+
+
 module.exports = {
   createDonation,
-  getDonationList
+  getDonationList,
+  acceptDonation
 };

@@ -25,4 +25,13 @@ router.post('/', donationController.createDonation);
  */
 router.get('/list', donationController.getDonationList);
 
+/**
+ * @route POST /donation/:donation_id/accept
+ * @desc 수혜자가 기부를 수락하여 매칭 생성
+ * @param {number} donation_id - 기부 ID
+ * @body {number} donation_id - 기부 ID (URL 파라미터와 동일해야 함)
+ * @access Private (RECIPIENT role required)
+ */
+router.post('/:donation_id/accept', donationController.acceptDonation);
+
 module.exports = router;
