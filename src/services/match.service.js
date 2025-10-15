@@ -98,9 +98,8 @@ class MatchService {
         if (!match.isPending()) {
             throw new Error('Match is not in a pending state');
         }
-
         match.reject();
-        await matchRepository.update(match);
+        await matchRepository.update(match.id, { status: match.status });
 
         return {
             status: "success",
